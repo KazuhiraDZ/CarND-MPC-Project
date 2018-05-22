@@ -3,6 +3,45 @@ Self-Driving Car Engineer Nanodegree Program
 
 ---
 
+## Abstract
+This repository contains the last project of term2. The goal of this project is to navigate a track in simulator, concretely, sending steering and acceleration commands to simulator and let car finish the track with less error(cross track error and orientation).in addition, there is a time latency in real world from getting data to make actuations. The solution should be robust for it.
+
+The solution makes use of IPOPT and CPPAD libraries to calculate an optimal trajectory and related actuations to minimize error with a third-degree polynomial fit to the given waypoints. we should let the MPC only considers a short duration, produces a trajectory for that duration based on a model of vehicle's kinematics and a cost function based mostly on vehicle's cross track error and orientation error, and other factors that may improve performance.
+
+---
+
+## Rubric Points
+
+### The Model
+The model contains a 6 parameters' state(xt, yt, psit, vt, ctet, epsit) as input and expects a output (delta, a). The actuators are limited, which contains steering angle(+-25degrees) and throttle(+-1,+1 denotes full throttle and -1 means full breaking).Based on the equations in previous course
+
+```
+  xt+1 = (xt + vt * cos(psit) * dt);
+  yt+1 = (yt + vt * sin(psit) * dt);
+  psit+1 = (psit - vt * deltat / Lf * dt);
+  vt+1 = (vt + at * dt);
+  ctet+1 = ((ft - yt) + (vt * sin(epsit) * dt));
+  epsit+1 - ((psit - psidest) - vt * deltat / Lf * dt);
+```
+
+### Timestep Length and Elapsed Duration (N & dt)
+N means the total number of points we are considering to calculate the future state of the vehicle. dt is the time interval between the two continuous states. In this implementation, I finally use **N=10** and **dt=0.1** to track a range of **T=1s**. 
+
+#### How to tune the parameters(N and dt)?
+Firstly, I use the values same as what I did in course, which is 25 in N and 0.05 in dt. But as what I imagined that the vehicle just rushed to road at begin. In my mine, I think df will reflect the real state if it has a small value, and the nearer the prediction to current state, the more correct output we will get. In addition, larger value of N will cost a lot of computation and we just use some of it, the rest will dropped as we will implement next prediction.
+
+#### How does T(N * dt) affect the prediction?
+Maybe increasing N and decreasing dt is a good choice to increase the accuracy of prediction. But if the car at high speed, we have large N and very small dt, then the computation will take a lot of time that the vehicle can't have actuation in time.
+
+### Polynomial Fitting and MPC Preprocessing
+Compare to MPC quiz, this project we need convert the global coordinates ptsx and ptsy to vehicle's local coordinate **waypoints_x** and **waypoints_y**. Then I use polyfit on waypoints to get coefficients of 3rd-degree curve in the line the car will be moving. Based on these coefficients I can compute the cross track error and orientation error, both of them will be used to next prediction.
+
+
+### Model Predictive Control with Latency
+In my implement, I take the latency into account that I use it to compute a future state as my current state, then take it in my MPC model to predict, which you can find at line 110-122 in **main.cpp**
+
+
+---
 ## Dependencies
 
 * cmake >= 3.5
